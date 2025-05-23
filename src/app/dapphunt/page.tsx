@@ -5,7 +5,7 @@ import ProductLeaderboard from "@/components/ProductLeaderboard";
 import ForumThreads from "@/components/ForumThreads";
 import PastLaunches from "@/components/PastLaunches";
 
-export default function Page() {
+export default function DappHuntPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -25,4 +25,4 @@ export default function Page() {
       </main>
     </div>
   );
-}
+} 

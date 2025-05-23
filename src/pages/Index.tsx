@@ -1,11 +1,9 @@
-'use client';
+import Header from "../components/Header";
+import ProductLeaderboard from "../components/ProductLeaderboard";
+import ForumThreads from "../components/ForumThreads";
+import PastLaunches from "../components/PastLaunches";
 
-import Header from "@/components/Header";
-import ProductLeaderboard from "@/components/ProductLeaderboard";
-import ForumThreads from "@/components/ForumThreads";
-import PastLaunches from "@/components/PastLaunches";
-
-export default function Page() {
+const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -25,4 +23,6 @@ export default function Page() {
       </main>
     </div>
   );
-}
+};
+
+export default Index;
