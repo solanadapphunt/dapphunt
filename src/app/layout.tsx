@@ -4,6 +4,7 @@ import {SolanaProvider} from '@/components/solana/solana-provider'
 import {UiLayout} from '@/components/ui/ui-layout'
 import {ReactQueryProvider} from './react-query-provider'
 import ConditionalLayout from './conditional-layout'
+import SessionProvider from '@/providers/SessionProvider'
 
 export const metadata = {
   title: 'DappHunt',
@@ -20,13 +21,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <ReactQueryProvider>
-          <ClusterProvider>
-            <SolanaProvider>
-              <ConditionalLayout>{children}</ConditionalLayout>
-            </SolanaProvider>
-          </ClusterProvider>
-        </ReactQueryProvider>
+        <SessionProvider>
+          <ReactQueryProvider>
+            <ClusterProvider>
+              <SolanaProvider>
+                <ConditionalLayout>{children}</ConditionalLayout>
+              </SolanaProvider>
+            </ClusterProvider>
+          </ReactQueryProvider>
+        </SessionProvider>
       </body>
     </html>
   )

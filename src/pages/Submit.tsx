@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '../components/Header';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,18 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-
-const categoryOptions = [
-  "DeFi", 
-  "NFTs", 
-  "Gaming", 
-  "Marketplace", 
-  "DAO Tools", 
-  "Infrastructure", 
-  "Social", 
-  "Metaverse", 
-  "Other"
-] as const;
+import { useCategories } from "@/hooks/useCategories";
+import { CheckCircle, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 const stageOptions = [
   "Idea",
@@ -61,7 +52,7 @@ const formSchema = z.object({
   oneLiner: z.string().max(60, {
     message: "One liner must not exceed 60 characters.",
   }),
-  category: z.enum(categoryOptions, {
+  category: z.string({
     required_error: "Please select a category.",
   }),
   subCategory: z.string().optional(),
@@ -152,13 +143,15 @@ type FormSchemaType = z.infer<typeof formSchema>;
 
 export default function Submit() {
   const { toast } = useToast();
+  const { categories, loading: categoriesLoading } = useCategories();
+  const [isSubmitted, setIsSubmitted] = useState(false);
   
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       projectName: "",
       oneLiner: "",
-      category: "DeFi",
+      category: "",
       subCategory: "",
       logo: undefined,
       bannerImage: undefined,
@@ -185,8 +178,8 @@ export default function Submit() {
       telegram: "",
       blog: "",
       launchDate: "",
-      currentStage: undefined,
-      fundingStatus: undefined,
+      currentStage: "Development",
+      fundingStatus: "Bootstrapped",
       achievements: "",
       daoCompatibility: "",
       governanceToken: "",
@@ -212,12 +205,73 @@ export default function Submit() {
     },
   });
 
-  function onSubmit(values: FormSchemaType) {
-    console.log(values);
+  async function onSubmit(values: FormSchemaType) {
+    try {
+      const response = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit project');
+      }
+
+      const result = await response.json();
+      
     toast({
       title: "Submission Received!",
       description: "We'll review your project and get back to you soon.",
     });
+
+      // Reset form after successful submission
+      form.reset();
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Submission error:', error);
+      toast({
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  if (isSubmitted) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-2xl mx-auto py-20 px-4 text-center">
+          <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              🎉 Submission Received!
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Thank you for submitting your dapp! We'll review it and get back to you within 2-3 business days.
+            </p>
+            <div className="space-y-3">
+              <Link href="/products">
+                <Button className="w-full bg-[#FF6154] hover:bg-[#E55347]">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View All Products
+                </Button>
+              </Link>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsSubmitted(false)}
+                className="w-full"
+              >
+                Submit Another Project
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -285,11 +339,15 @@ export default function Submit() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categoryOptions.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
+                          {categoriesLoading ? (
+                            <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                          ) : (
+                            categories.map((category) => (
+                              <SelectItem key={category.id} value={category.name}>
+                                {category.name}
                             </SelectItem>
-                          ))}
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />

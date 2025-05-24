@@ -43,12 +43,12 @@ const Leaderboard = () => {
     const newMonth = monthParam ? parseInt(monthParam) : selectedDate.month;
     const newWeek = weekParam ? parseInt(weekParam) : null;
 
-    setSelectedDate(prev => ({
-      ...prev,
+      setSelectedDate(prev => ({
+        ...prev,
       year: newYear,
       month: newMonth,
       week: newWeek
-    }));
+      }));
   }, [periodParam, yearParam, monthParam, weekParam]);
 
   const handlePeriodChange = (newPeriod: Period) => {

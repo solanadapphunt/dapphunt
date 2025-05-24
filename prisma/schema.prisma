@@ -1,0 +1,310 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Core DappHunt Models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  username      String?   @unique
+  bio           String?
+  twitter       String?
+  github        String?
+  website       String?
+  role          UserRole  @default(USER)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  projects      Project[]
+  submissions   Submission[]
+  votes         Vote[]
+  forumThreads  ForumThread[]
+  forumPosts    ForumPost[]
+  
+  @@map("users")
+}
+
+model Category {
+  id          String @id @default(cuid())
+  name        String @unique
+  slug        String @unique
+  description String?
+  color       String?
+  icon        String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  projects Project[]
+  
+  @@map("categories")
+}
+
+model Project {
+  id                   String        @id @default(cuid())
+  name                 String
+  slug                 String        @unique
+  oneLiner             String
+  description          String
+  
+  // URLs and Links
+  liveUrl              String
+  githubUrl            String?
+  twitterHandle        String?
+  discordUrl           String?
+  telegramUrl          String?
+  blogUrl              String?
+  
+  // Technical
+  solanaAddress        String
+  tokenSymbol          String?
+  tokenAddress         String?
+  
+  // Media
+  logoUrl              String?
+  bannerUrl            String?
+  screenshotUrls       String? // JSON string for SQLite compatibility
+  demoVideoUrl         String?
+  
+  // Metrics
+  dailyActiveUsers     Int?
+  monthlyVolume        String?
+  totalUsers           Int?
+  tvl                  String?
+  
+  // Launch info
+  launchDate           DateTime
+  featured             Boolean       @default(false)
+  status               ProjectStatus @default(PENDING)
+  
+  // Scores and ranking
+  huntScore            Int           @default(0)
+  totalVotes           Int           @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id])
+  votes      Vote[]
+  launches   Launch[]
+  
+  @@map("projects")
+}
+
+model Submission {
+  id                      String           @id @default(cuid())
+  
+  // Basic Info (from your form)
+  projectName             String
+  oneLiner                String
+  category                String
+  subCategory             String?
+  
+  // Description
+  description             String
+  keyFeatures             String
+  uniqueValue             String
+  targetAudience          String
+  
+  // Technical Details
+  solanaAddress           String
+  githubRepo              String?
+  liveUrl                 String
+  testnetUrl              String?
+  auditStatus             String?
+  
+  // Tokenomics
+  tokenSymbol             String?
+  tokenAddress            String?
+  tvl                     String?
+  revenueModel            String?
+  tokenDistribution       String?
+  
+  // Team & Community
+  founders                String?
+  teamSize                String?
+  twitter                 String
+  discord                 String?
+  telegram                String?
+  blog                    String?
+  
+  // Launch Strategy
+  launchDate              DateTime
+  currentStage            String?
+  fundingStatus           String?
+  achievements            String?
+  
+  // Status
+  status                  SubmissionStatus @default(PENDING)
+  reviewNotes             String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  submittedById String
+  submittedBy   User   @relation(fields: [submittedById], references: [id])
+  
+  @@map("submissions")
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  voteType  String   // "UP" or "DOWN"
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, projectId])
+  @@map("votes")
+}
+
+model Launch {
+  id          String   @id @default(cuid())
+  date        DateTime
+  period      Period   @default(DAILY)
+  year        Int
+  month       Int?
+  week        Int?
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  rank        Int
+  score       Int
+  featured    Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([projectId, period, year, month, week])
+  @@map("launches")
+}
+
+model ForumThread {
+  id          String      @id @default(cuid())
+  title       String
+  content     String
+  category    String
+  isHot       Boolean     @default(false)
+  isPinned    Boolean     @default(false)
+  replyCount  Int         @default(0)
+  
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  posts ForumPost[]
+  
+  @@map("forum_threads")
+}
+
+model ForumPost {
+  id        String      @id @default(cuid())
+  content   String
+  
+  threadId  String
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User        @relation(fields: [authorId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("forum_posts")
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum ProjectStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  LIVE
+}
+
+enum SubmissionStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum Period {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
